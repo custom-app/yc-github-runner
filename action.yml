@@ -6,7 +6,9 @@ inputs:
     description: >-
       Specify here which mode you want to use:
         - 'start' - to start a new runner;
-        - 'stop' - to stop the previously created runner.
+        - 'stop' - to stop the previously created runner;
+        - 'start-existing' - to start an instance with preinstalled runner;
+        - 'stop-existing' - to stop an instance with preinstalled runner without deleting instance;
     required: true
   github-token:
     description: >-
