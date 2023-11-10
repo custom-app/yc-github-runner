@@ -11,10 +11,14 @@ import {Instance, IpVersion} from '@yandex-cloud/nodejs-sdk/dist/generated/yande
 import {
   AttachedDiskSpec,
   AttachedDiskSpec_Mode,
-  CreateInstanceMetadata,
   CreateInstanceRequest,
+  DeleteInstanceMetadata,
   DeleteInstanceRequest,
   InstanceServiceService,
+  StartInstanceMetadata,
+  StartInstanceRequest,
+  StopInstanceMetadata,
+  StopInstanceRequest,
 } from '@yandex-cloud/nodejs-sdk/dist/generated/yandex/cloud/compute/v1/instance_service';
 import * as yaml from 'js-yaml';
 import {Config, GithubRepo} from './config';
@@ -175,11 +179,55 @@ async function destroyVm(
   );
   const finishedOp = await waitForOperation(op, session);
   if (finishedOp.metadata) {
-    const instanceId = decodeMessage<CreateInstanceMetadata>(finishedOp.metadata).instanceId;
+    const instanceId = decodeMessage<DeleteInstanceMetadata>(finishedOp.metadata).instanceId;
     core.info(`Destroyed instance with id '${instanceId}'`);
   } else {
-    core.error(`Failed to create instance'`);
-    throw new Error('Failed to create instance');
+    core.error(`Failed to destroy instance'`);
+    throw new Error('Failed to destroy instance');
+  }
+  core.endGroup();
+}
+
+async function startVm(
+  session: Session,
+  instanceService: WrappedServiceClientType<typeof InstanceServiceService>,
+): Promise<void> {
+  core.startGroup('Start VM');
+
+  const op = await instanceService.start(
+    StartInstanceRequest.fromPartial({
+      instanceId: config.input.instanceId,
+    }),
+  );
+  const finishedOp = await waitForOperation(op, session);
+  if (finishedOp.metadata) {
+    const instanceId = decodeMessage<StartInstanceMetadata>(finishedOp.metadata).instanceId;
+    core.info(`Started instance with id '${instanceId}'`);
+  } else {
+    core.error(`Failed to start instance'`);
+    throw new Error('Failed to start instance');
+  }
+  core.endGroup();
+}
+
+async function stopVm(
+  session: Session,
+  instanceService: WrappedServiceClientType<typeof InstanceServiceService>,
+): Promise<void> {
+  core.startGroup('Stщз VM');
+
+  const op = await instanceService.stop(
+    StopInstanceRequest.fromPartial({
+      instanceId: config.input.instanceId,
+    }),
+  );
+  const finishedOp = await waitForOperation(op, session);
+  if (finishedOp.metadata) {
+    const instanceId = decodeMessage<StopInstanceMetadata>(finishedOp.metadata).instanceId;
+    core.info(`Stopped instance with id '${instanceId}'`);
+  } else {
+    core.error(`Failed to stop instance'`);
+    throw new Error('Failed to stop instance');
   }
   core.endGroup();
 }
@@ -227,6 +275,14 @@ async function run(): Promise<void> {
       }
       case 'stop': {
         await stop(session, instanceService);
+        break;
+      }
+      case 'start-existing': {
+        await startVm(session, instanceService);
+        break;
+      }
+      case 'stop-existing': {
+        await stopVm(session, instanceService);
         break;
       }
       default:
